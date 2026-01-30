@@ -90,4 +90,53 @@ public class CustomerAdminService {
     public List<Address> getCustomerAddresses(Long userId) {
         return addressRepository.findByUserId(userId);
     }
+
+    public User updateProfile(Long userId, com.boxexpress.backend.dto.UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (request.getFullName() != null && !request.getFullName().isEmpty()) {
+            user.setFullName(request.getFullName());
+        }
+
+        if (request.getPhone() != null && !request.getPhone().isEmpty()) {
+            user.setPhone(request.getPhone());
+        }
+
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        return userRepository.save(user);
+    }
+
+    public Address updateAddress(Long userId, Long addressId, AddressDTO dto) {
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new RuntimeException("Dirección no encontrada"));
+
+        if (!address.getUser().getId().equals(userId)) {
+            throw new RuntimeException("No tiene permiso para editar esta dirección");
+        }
+
+        address.setContactName(dto.getContactName());
+        address.setPhone(dto.getPhone());
+        address.setDepartment(dto.getDepartment());
+        address.setMunicipality(dto.getMunicipality());
+        address.setStreet(dto.getStreet());
+        address.setReferencePoint(dto.getReferencePoint());
+        // Add other fields as necessary
+
+        return addressRepository.save(address);
+    }
+
+    public void deleteAddress(Long userId, Long addressId) {
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new RuntimeException("Dirección no encontrada"));
+
+        if (!address.getUser().getId().equals(userId)) {
+            throw new RuntimeException("No tiene permiso para eliminar esta dirección");
+        }
+
+        addressRepository.delete(address);
+    }
 }

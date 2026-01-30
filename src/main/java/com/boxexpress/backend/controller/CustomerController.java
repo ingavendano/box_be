@@ -37,4 +37,20 @@ public class CustomerController {
     public ResponseEntity<Address> addMyAddress(@RequestBody AddressDTO addressDTO) {
         return ResponseEntity.ok(customerService.addAddress(getCurrentUserId(), addressDTO));
     }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(@RequestBody com.boxexpress.backend.dto.UpdateProfileRequest request) {
+        return ResponseEntity.ok(customerService.updateProfile(getCurrentUserId(), request));
+    }
+
+    @PutMapping("/addresses/{id}")
+    public ResponseEntity<Address> updateAddress(@PathVariable Long id, @RequestBody AddressDTO addressDTO) {
+        return ResponseEntity.ok(customerService.updateAddress(getCurrentUserId(), id, addressDTO));
+    }
+
+    @DeleteMapping("/addresses/{id}")
+    public ResponseEntity<Void> deleteAddress(@PathVariable Long id) {
+        customerService.deleteAddress(getCurrentUserId(), id);
+        return ResponseEntity.noContent().build();
+    }
 }

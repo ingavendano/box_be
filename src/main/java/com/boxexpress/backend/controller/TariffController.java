@@ -18,7 +18,7 @@ public class TariffController {
     private TariffService tariffService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')") // Only Admin should see config
+    @PreAuthorize("isAuthenticated()") // Allow Clients to read for Calculator
     public List<TariffCategory> getAllCategories() {
         return tariffService.getAllCategories();
     }

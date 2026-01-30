@@ -39,8 +39,13 @@ public class AuthService {
 
                 userRepository.save(user);
 
-                // Auto-login after register? Or just return success.
-                // Let's return token directly for seamless UX
+                // Generate Locker Number
+                if (user.getRole() == Role.ROLE_CLIENTE) {
+                        String lockerNumber = "BOX-SV-" + String.format("%09d", user.getId());
+                        user.setLockerNumber(lockerNumber);
+                        userRepository.save(user);
+                }
+
                 UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
                 String jwtToken = jwtUtils.generateToken(userDetails);
 
@@ -49,6 +54,7 @@ public class AuthService {
                                 .fullName(user.getFullName())
                                 .email(user.getEmail())
                                 .role(user.getRole())
+                                .lockerNumber(user.getLockerNumber())
                                 .build();
         }
 
@@ -69,6 +75,7 @@ public class AuthService {
                                 .fullName(user.getFullName())
                                 .email(user.getEmail())
                                 .role(user.getRole())
+                                .lockerNumber(user.getLockerNumber())
                                 .build();
         }
 }

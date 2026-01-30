@@ -20,8 +20,8 @@ public class GlobalParameterController {
     private GlobalParameterService parameterService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<GlobalParameter> getAllSettings() {
+    @PreAuthorize("isAuthenticated()") // Allow Clients to read for Calculator
+    public List<GlobalParameter> getAllParameters() {
         return parameterService.getAllParameters();
     }
 
