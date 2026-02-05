@@ -18,7 +18,7 @@ public class TariffController {
     private TariffService tariffService;
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()") // Allow Clients to read for Calculator
+    @PreAuthorize("permitAll()") // Allow Public Calculator to read
     public List<TariffCategory> getAllCategories() {
         return tariffService.getAllCategories();
     }
@@ -41,5 +41,11 @@ public class TariffController {
     public ResponseEntity<Void> deleteRange(@PathVariable Long rangeId) {
         tariffService.deleteRange(rangeId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/ranges/{rangeId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TariffRange> updateRange(@PathVariable Long rangeId, @RequestBody TariffRange range) {
+        return ResponseEntity.ok(tariffService.updateRange(rangeId, range));
     }
 }

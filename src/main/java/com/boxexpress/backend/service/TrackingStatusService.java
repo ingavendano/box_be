@@ -38,6 +38,7 @@ public class TrackingStatusService {
         status.setName(statusDetails.getName());
         status.setDescription(statusDetails.getDescription());
         status.setSortOrder(statusDetails.getSortOrder());
+        status.setColor(statusDetails.getColor());
         status.setActive(statusDetails.isActive());
 
         return repository.save(status);

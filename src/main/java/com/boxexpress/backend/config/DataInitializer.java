@@ -16,11 +16,16 @@ import java.util.List;
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
+    private final com.boxexpress.backend.repository.TrackingStatusRepository trackingStatusRepository;
 
     @Override
     public void run(String... args) throws Exception {
-        log.info("Checking for users without locker number...");
+        migrateUsers();
+        migrateStatusColors();
+    }
 
+    private void migrateUsers() {
+        log.info("Checking for users without locker number...");
         // This is a simple migration. For production with thousands of users, do this
         // in SQL or batch.
         List<User> users = userRepository.findAll();
@@ -38,8 +43,29 @@ public class DataInitializer implements CommandLineRunner {
 
         if (count > 0) {
             log.info("Migrated {} users with new Locker Numbers.", count);
-        } else {
-            log.info("No users needed migration.");
+        }
+    }
+
+    private void migrateStatusColors() {
+        log.info("Checking for statuses without color...");
+        List<com.boxexpress.backend.model.TrackingStatus> statuses = trackingStatusRepository.findAll();
+        int count = 0;
+        for (com.boxexpress.backend.model.TrackingStatus status : statuses) {
+            if (status.getColor() == null || status.getColor().isEmpty()) {
+                String color = switch (status.getCode()) {
+                    case "RECEIVED", "IN_TRANSIT" -> "#3B82F6"; // Blue
+                    case "IN_CUSTOMS" -> "#F97316"; // Orange
+                    case "READY_PICKUP", "DELIVERED" -> "#22C55E"; // Green
+                    case "CANCELLED" -> "#EF4444"; // Red
+                    default -> "#6B7280"; // Gray
+                };
+                status.setColor(color);
+                trackingStatusRepository.save(status);
+                count++;
+            }
+        }
+        if (count > 0) {
+            log.info("Migrated {} tracking statuses with default colors.", count);
         }
     }
 }

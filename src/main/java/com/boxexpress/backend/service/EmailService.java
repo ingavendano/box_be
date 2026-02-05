@@ -1,20 +1,16 @@
 package com.boxexpress.backend.service;
 
+import com.boxexpress.backend.dto.brevo.BrevoEmailRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +26,7 @@ public class EmailService {
     @Value("${brevo.api.url}")
     private String brevoApiUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestClient.Builder restClientBuilder;
 
     @Async
     public void sendTrackingUpdate(String to, String customerName, String trackingId, String newStatus,
@@ -38,35 +34,28 @@ public class EmailService {
         try {
             log.info("Preparing to send tracking update email to: {}", to);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("api-key", brevoApiKey);
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+            BrevoEmailRequest body = BrevoEmailRequest.builder()
+                    .sender(BrevoEmailRequest.Sender.builder()
+                            .name("Box Express SV")
+                            .email(senderEmail)
+                            .build())
+                    .to(List.of(BrevoEmailRequest.Recipient.builder()
+                            .name(customerName)
+                            .email(to)
+                            .build()))
+                    .subject("Actualización de Paquete - Box Express SV")
+                    .htmlContent(generateHtmlTemplate(customerName, trackingId, newStatus, trackingUrl))
+                    .build();
 
-            Map<String, Object> body = new HashMap<>();
+            RestClient restClient = restClientBuilder.build();
 
-            // Sender
-            Map<String, String> sender = new HashMap<>();
-            sender.put("name", "Box Express SV");
-            sender.put("email", senderEmail);
-            body.put("sender", sender);
-
-            // To
-            Map<String, String> recipient = new HashMap<>();
-            recipient.put("email", to);
-            recipient.put("name", customerName);
-            body.put("to", List.of(recipient));
-
-            // Subject
-            body.put("subject", "Actualización de Paquete - Box Express SV");
-
-            // HTML Content
-            String htmlContent = generateHtmlTemplate(customerName, trackingId, newStatus, trackingUrl);
-            body.put("htmlContent", htmlContent);
-
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-
-            ResponseEntity<String> response = restTemplate.postForEntity(brevoApiUrl, request, String.class);
+            ResponseEntity<String> response = restClient.post()
+                    .uri(brevoApiUrl)
+                    .header("api-key", brevoApiKey)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .toEntity(String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("Email sent successfully to {} via Brevo API.", to);

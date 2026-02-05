@@ -56,8 +56,24 @@ public class GlobalParameterService {
         return parameterRepository.findAll();
     }
 
-    public List<ParameterAuditLog> getAuditLogs() {
-        return auditLogRepository.findTop50ByOrderByChangeDateDesc();
+    @Transactional(readOnly = true)
+    public List<com.boxexpress.backend.dto.ParameterAuditLogDTO> getAuditLogs() {
+        return auditLogRepository.findTop50ByOrderByChangeDateDesc().stream()
+                .map(log -> com.boxexpress.backend.dto.ParameterAuditLogDTO.builder()
+                        .id(log.getId())
+                        .oldValue(log.getOldValue())
+                        .newValue(log.getNewValue())
+                        .changeDate(log.getChangeDate())
+                        .modifiedBy(com.boxexpress.backend.dto.ParameterAuditLogDTO.UserSummaryDTO.builder()
+                                .username(log.getModifiedBy().getEmail())
+                                .fullName(log.getModifiedBy().getFullName())
+                                .build())
+                        .parameter(com.boxexpress.backend.dto.ParameterAuditLogDTO.ParameterSummaryDTO.builder()
+                                .paramKey(log.getParameter().getParamKey())
+                                .description(log.getParameter().getDescription())
+                                .build())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Transactional

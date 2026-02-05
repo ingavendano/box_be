@@ -68,4 +68,11 @@ public class PackageController {
         String email = auth.getName();
         return ResponseEntity.ok(packageService.getPackagesByUserEmail(email));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deletePackage(@PathVariable Long id) {
+        packageService.deletePackage(id);
+        return ResponseEntity.noContent().build();
+    }
 }

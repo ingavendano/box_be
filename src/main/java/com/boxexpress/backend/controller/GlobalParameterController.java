@@ -43,7 +43,7 @@ public class GlobalParameterController {
 
     @GetMapping("/audit")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<ParameterAuditLog> getAuditLogs() {
+    public List<com.boxexpress.backend.dto.ParameterAuditLogDTO> getAuditLogs() {
         return parameterService.getAuditLogs();
     }
 }

@@ -71,4 +71,85 @@ public class TariffService {
     public void deleteRange(Long rangeId) {
         rangeRepository.deleteById(rangeId);
     }
+
+    @Transactional
+    public TariffRange updateRange(Long rangeId, TariffRange updatedRange) {
+        return rangeRepository.findById(rangeId).map(existingRange -> {
+            if (updatedRange.getSubcategoryName() != null) {
+                existingRange.setSubcategoryName(updatedRange.getSubcategoryName());
+            }
+            if (updatedRange.getFeeValue() != null) {
+                existingRange.setFeeValue(updatedRange.getFeeValue());
+            }
+            return rangeRepository.save(existingRange);
+        }).orElseThrow(() -> new RuntimeException("Rango no encontrado"));
+    }
+
+    @Autowired
+    private GlobalParameterService globalParameterService;
+
+    public com.boxexpress.backend.dto.quote.QuoteResponse calculateQuote(
+            com.boxexpress.backend.dto.quote.QuoteRequest request) {
+
+        double weight = request.getWeight() != null ? request.getWeight() : 0.0;
+        double declaredValue = request.getDeclaredValue() != null ? request.getDeclaredValue() : 0.0;
+        boolean isHomeDelivery = request.getIsHomeDelivery() != null ? request.getIsHomeDelivery() : false;
+
+        // Get Parameters
+        double costLbLow = getParamDouble("COST_LB_LOW", 2.50);
+        double costLbHigh = getParamDouble("COST_LB_HIGH", 2.00);
+        double feeAirport = getParamDouble("FEE_AIRPORT", 5.00);
+        double feeAdmin = getParamDouble("FEE_ADMIN", 2.50);
+        double feeHome = getParamDouble("FEE_HOME_DELIVERY", 3.00);
+        double taxIva = getParamDouble("TAX_IVA", 0.13);
+
+        // 1. Base Cost
+        double costPerLb = (weight <= 10) ? costLbLow : costLbHigh;
+        double baseCost = weight * costPerLb;
+
+        // 2. Tariff Cost
+        double tariffCost = 0.0;
+        if (request.getSubcategoryId() != null) {
+            Optional<TariffRange> rangeOpt = rangeRepository.findById(request.getSubcategoryId());
+            if (rangeOpt.isPresent()) {
+                TariffRange range = rangeOpt.get();
+                if (range.getFeeValue() != null) {
+                    tariffCost = declaredValue * (range.getFeeValue().doubleValue() / 100.0);
+                }
+            }
+        }
+
+        // 3. Fees
+        double adminFees = feeAirport + feeAdmin;
+
+        // 4. Home Delivery
+        double homeDeliveryFee = isHomeDelivery ? feeHome : 0.0;
+
+        // 5. Taxes
+        double taxes = (baseCost + adminFees + homeDeliveryFee) * taxIva;
+
+        // 6. Total
+        double totalCost = baseCost + tariffCost + adminFees + homeDeliveryFee + taxes;
+
+        return com.boxexpress.backend.dto.quote.QuoteResponse.builder()
+                .baseCost(baseCost)
+                .tariffCost(tariffCost)
+                .adminFees(adminFees)
+                .homeDeliveryFee(homeDeliveryFee)
+                .taxes(taxes)
+                .totalCost(totalCost)
+                .build();
+    }
+
+    private double getParamDouble(String key, double defaultValue) {
+        try {
+            return globalParameterService.getAllParameters().stream()
+                    .filter(p -> p.getParamKey().equals(key))
+                    .findFirst()
+                    .map(p -> Double.parseDouble(p.getParamValue()))
+                    .orElse(defaultValue);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
 }

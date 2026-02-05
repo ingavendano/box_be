@@ -21,5 +21,6 @@ public class TrackingStatus {
     private String name; // e.g., "Recibido en bodega"
     private String description; // Detailed description if needed
     private Integer sortOrder; // To control display order
+    private String color; // Hex color code (e.g., #3B82F6)
     private boolean active; // To soft delete or hide statuses
 }

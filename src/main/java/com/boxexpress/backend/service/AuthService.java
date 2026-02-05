@@ -41,7 +41,7 @@ public class AuthService {
 
                 // Generate Locker Number
                 if (user.getRole() == Role.ROLE_CLIENTE) {
-                        String lockerNumber = "BOX-SV-" + String.format("%09d", user.getId());
+                        String lockerNumber = "BOXSV" + String.format("%04d", user.getId());
                         user.setLockerNumber(lockerNumber);
                         userRepository.save(user);
                 }

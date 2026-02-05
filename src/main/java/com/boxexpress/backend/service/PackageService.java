@@ -198,4 +198,11 @@ public class PackageService {
                 })
                 .orElse(prefix + "000001"); // First package of the year
     }
+
+    @Transactional
+    public void deletePackage(Long id) {
+        Package pkg = packageRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Paquete no encontrado con ID: " + id));
+        packageRepository.delete(pkg);
+    }
 }
